@@ -1,0 +1,56 @@
+services:
+  mysql:
+   image: mysql:latest
+   volumes:
+    - ./docker_files/mysql/data:/var/lib/mysql
+    - ./docker_files/mysql/sql_command/*.sql:/docker-entrypoint-initdb.d
+   environment:
+    MYSQL_ROOT_PASSWORD: root
+    MYSQL_DATABASE: db_app
+    MYSQL_USER: dbapp
+    MYSQL_PASSWORD: root@3927
+   expose:
+      - "3306"
+   ports:
+      - "3306:3306"
+   network:
+    - php_dev-network  
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: 'SERVER-phpmyadmin'
+    links:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - '8099:80'
+    volumes:
+      - /sessions
+    depends_on:
+      - mysql 
+  
+
+  apache_php:
+    build: 
+      dockerfile: ./docker_files/php/
+      context: .
+    image: ubuntu_apache_php81_mysql:latest
+    container_name: ubuntu_apache_php81_mysql
+    ports:
+      - "8085:80"
+    networks:
+      - php_dev-network
+    volumes:
+      - ./docker_files/php/php.ini:/etc/php/8.1/apache2/php.ini
+      - ./:/var/www/html:rw
+      - ./logs:/var/log/apache2:rw
+    depends_on:
+      - mysql
+    links:
+      - mysql
+
+  network:
+      php_dev-network:
+        driver: bridge
